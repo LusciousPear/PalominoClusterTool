@@ -1,0 +1,55 @@
+---
+# these are configurations specific to your environment
+
+#   Copyright 2012 Tim Ellis
+#   CTO: PalominoDB
+#   The Palomino Cluster Tool
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+# MHA needs this
+cluster_passwordlessSudoUser: spire
+
+# these directories will be created
+# don't fret CLUSTERNAME, it'll be replaced by
+# configuration scripts
+mha_log_directory: /var/log/mha___CLUSTERNAME__
+mha_config_directory: /etc/mha___CLUSTERNAME__
+mha_home_directory: /opt/mha___CLUSTERNAME__
+
+# Your app uses these (and Jetpants is configured thusly)
+mysql_read_user: palominoAppRead
+mysql_read_password: CHANGEME_palominoReadPassword
+mysql_write_user: palominoAppWrite
+mysql_write_password: CHANGEME_palominoWritePassword
+
+# MHA uses these
+mysql_repl_user: repl
+mysql_repl_password: CHANGEME_palominoReplPassword
+mysql_root_user: root
+mysql_root_password: CHANGEME_palominoRootPassword
+
+# Zabbix, Cacti, Nagios use these
+mysql_Zabbix_user: monitorZabbix
+mysql_Zabbix_password: CHANGEME_palominoMonZabbixPassword
+mysql_Cacti_user: monitorCacti
+mysql_Cacti_password: CHANGEME_palominoMonCactiPassword
+mysql_Nagios_user: monitorNagios
+mysql_Nagios_password: CHANGEME_palominoMonNagiosPassword
+
+# only MHA uses this - to change it also for MySQL, you must edit
+# the variable files in the MySQL playbook directories. recommendation
+# is NOT to change this location. use symlinks if you must store the
+# files in another physical location
+mysql_log_dir: /var/log/mysql
+

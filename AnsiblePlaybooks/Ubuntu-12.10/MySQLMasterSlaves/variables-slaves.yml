@@ -1,0 +1,185 @@
+---
+#   Copyright 2012 Tim Ellis
+#   CTO: PalominoDB
+#   The Palomino Cluster Tool
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+# ==============================================================================
+# MySQL Server my.cnf settings - change these them depending on the sort of
+# hardware you allocated and workload expected.
+#
+# NOTE: If a given variable looks like this:
+#   xyz: "xyz"
+# That means it's a variable with no value in my.cnf, to disable this variable,
+# set its value to "", like this:
+#   xyz: ""
+#
+# you should strive to leave all logs in /var/log/mysql and all databases in
+# /var/lib/mysql and all lockfiles in /var/run/mysql - if you do change any of
+# these locations, make sure you change them for MHA and other components as
+# well. it'll likely be easier to just use symlinks if you prefer the physical
+# files not to be in those locations
+#
+# This file contains three basic configurations, for 1.5GB RAM, 8GB RAM, and
+# 32GB RAM. Search the file for "1.5-8-32GB" to find the locations that
+# have variables possibly-defined in those three different ways. You can
+# extrapolate based on those values to guess other generic defaults if your
+# servers are of a different configuration.
+# ==============================================================================
+
+mysql:
+  # settings dealing with masterness or slaveness - uncomment one set
+  # if you have SSDs, set innodb_flush_log_at_trx_commit to 1 no matter what
+  ## ----- # slave settings
+  read_only: "read_only"
+  ## set innodb_flush_log_at_trx_commit to 1 for ACID compliance
+  innodb_flush_log_at_trx_commit: 2
+  auto_increment_increment: "LEAVE_AT_DEFAULT_SETTING"
+  auto_increment_offset: "LEAVE_AT_DEFAULT_SETTING"
+  ## ----- # master settings
+  ## read_only: ""
+  ## innodb_flush_log_at_trx_commit: 1
+  ## auto_increment_increment: 1
+  ## auto_increment_offset: 1
+  ## ----- # end master|slave settings
+
+  # query cache is useful only for read intensive workload
+  ## ----- # read intensive workload
+  ## query_cache_type: 1
+  ## query_cache_size: "32M"
+  ## query_cache_limit: "1M"
+  ## ----- # end of read intensive workload
+  ## ----- # write intensive workload
+  query_cache_type: 0
+  query_cache_size: "0M"
+  query_cache_limit: "1M"
+  ## ----- # end of write intensive workload
+
+  # file locations
+  datadir: "/var/lib/mysql"
+  tmpdir: "/tmp"
+  slow_query_log_file: "/var/log/mysql/slow-log"
+  socket: "/var/run/mysqld/mysqld.sock"
+
+  # replication
+  log_bin: "/var/log/mysql/bin-log"
+  relay_log: "/var/log/mysql/relay-log"
+  relay_log_index: "/var/log/mysql/relay-log.index"
+  relay_log_info_file: "/var/log/mysql/relay-log.info"
+  expire_logs_days: 14
+  log_slave_updates: "log_slave_updates"
+  # with this option enabled, slave process needs to be started manually after restart
+  skip_slave_start: ""
+
+  # modern cache sizes
+  table_open_cache: 1024
+  # mysqld can recycle threads once the clients disconnect
+  # set this value not too high to not waste memory
+  # set this value not too low to not waste CPU cycles to create new threads
+  thread_cache_size: 64
+  table_definition_cache: 2048
+
+  # networking
+  bind_address: "0.0.0.0"
+  port: 3306
+  back_log: 100
+  # very workload-dependent - raise if you get too-many-connections errors
+  # rule-of-thumb: max_connections = ~10% of RAM / 2MB (typical footprint of a thread)
+  # 1.5-8-32GB: 100, 500, 1600
+  max_connections: 100
+  max_connect_errors: 15000
+  max_allowed_packet: "64M"
+
+  # seconds timeouts
+  # lower these values if the applications doesn't reuse connection
+  interactive_timeout: 600
+  wait_timeout: 120
+  # skip DNS lookup
+  skip_name_resolve: "skip_name_resolve"
+
+  # temp tables
+  tmp_table_size: "LEAVE_AT_DEFAULT_SETTING"
+  max_heap_table_size: "LEAVE_AT_DEFAULT_SETTING"
+
+  # settings for SSD- or HDD-based systems. Uncomment one set
+  ## ----- # SSD settings
+  ## # We experience poor performance with ALL_O_DIRECT - use O_DIRECT
+  ## innodb_flush_log_at_trx_commit: 1
+  ## innodb_flush_method: "O_DIRECT"
+  ## innodb_adaptive_checkpoint: "keep_average"
+  ## innodb_adaptive_flushing: 1
+  ## innodb_flush_neighbor_pages: 0
+  ## innodb_read_ahead: 0
+  ## ----- # HDD settings
+  innodb_flush_method: "LEAVE_AT_DEFAULT_SETTING"
+  innodb_adaptive_checkpoint: "LEAVE_AT_DEFAULT_SETTING"
+  innodb_adaptive_flushing: "LEAVE_AT_DEFAULT_SETTING"
+  innodb_flush_neighbor_pages: "LEAVE_AT_DEFAULT_SETTING"
+  innodb_read_ahead: "LEAVE_AT_DEFAULT_SETTING"
+  ## ----- # end SSD|HDD settings
+
+  # rule-of-thumb:
+  # write threads = Spindle count
+  # read threads = CPU count
+  # thread concurrency = 0 is normally the best choice
+  innodb_write_io_threads: "LEAVE_AT_DEFAULT_SETTING"
+  innodb_read_io_threads: "LEAVE_AT_DEFAULT_SETTING"
+  innodb_thread_concurrency: 0
+
+  # InnoDB settings
+  # rule-of-thumb: ~75% of total RAM
+  # if your server is swapping even though using far less than all RAM,
+  # use Google to search for Linux, NUMA, MySQL. punchline: numactl
+  # 1.5-8-32GB: 1150M, 6G, 24G
+  innodb_buffer_pool_size: "1150M"
+  # 1.5-8-32GB: 256M, 1G, 1G (consider 2G as you increase instance size)
+  innodb_log_file_size: "256M"
+  innodb_log_files_in_group: 2
+  innodb_log_buffer_size: "LEAVE_AT_DEFAULT_SETTING"
+  innodb_open_files: 300
+  innodb_file_per_table: 1
+  # this option is available from InnoDB Plugin (recent MySQL 5.1 and 5.5)
+  innodb_file_format: "Barracuda"
+  # the adaptive hash index normally boost performance, unless its maintenance costs become a bottleneck
+  innodb_adaptive_hash_index: 1
+
+  # MyISAM
+  key_buffer_size: "LEAVE_AT_DEFAULT_SETTING"
+  myisam_sort_buffer_size: "LEAVE_AT_DEFAULT_SETTING"
+
+  # logging
+  log_output: "FILE"
+  slow_query_log: 1
+  long_query_time: 1
+  # set sync_binlog = 1 for ACID compliance
+  sync_binlog: 0
+
+  # per-thread buffers - rarely need tuned
+  sort_buffer_size: "LEAVE_AT_DEFAULT_SETTING"
+  read_buffer_size: "LEAVE_AT_DEFAULT_SETTING"
+  read_rnd_buffer_size: "LEAVE_AT_DEFAULT_SETTING"
+  join_buffer_size: "LEAVE_AT_DEFAULT_SETTING"
+
+  # If this is InnoDB, it can cause slowness if temporary tables are used
+  # extensively since MyISAM is generally faster for temp tables
+  default_storage_engine: "LEAVE_AT_DEFAULT_SETTING"
+
+  # miscellaneous parameters
+  timezone: "UTC"
+  character_set: "utf8"
+  # small=500, medium=5000, large=20000 - must set ulimits
+  open_files_limit: 5000
+  # you probably always want this to be 1
+  skip_external_locking: 1
+

@@ -1,0 +1,46 @@
+---
+#   Copyright 2012 Tim Ellis
+#   CTO: PalominoDB
+#   The Palomino Cluster Tool
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+# configure MHA manager software
+- hosts: mhamanager:mhanodes
+  user: ubuntu
+  sudo: True
+  vars_files:
+   - ../../currentPalominoConfiguration.yml
+  tasks:
+   - name: install MHA configuration template
+     action: template src=../templates/etc:mha:palominoClusterTool.cnf dest=$mha_config_directory/palominoClusterTool.cnf owner=$cluster_passwordlessSudoUser group=$cluster_passwordlessSudoUser mode=0644
+
+   - name: privkey of user who can SSH around at will
+     action: copy src=$cluster_sudoUserPrivateKey dest=/home/$cluster_passwordlessSudoUser/.ssh/id_dsa mode=0600 owner=$cluster_passwordlessSudoUser group=$cluster_passwordlessSudoUser
+
+   - name: pubkey of user who can SSH around at will
+     action: authorized_key user=$cluster_passwordlessSudoUser key="$cluster_sudoUserPublicKey"
+
+
+# setup MySQL to let MHA connect
+- hosts: mhanodes
+  user: ubuntu
+  sudo: True
+  vars_files:
+   - ../../currentPalominoConfiguration.yml
+  tasks:
+   # this will replicate to all slaves of masters - if it is run on the slaves, it will
+   # break replication when the already-existing user is attempted to create again.
+   - name: grant root user access to MHA manager node - what is that node? FIXME.'%' for now
+     action: mysql_user name=$mysql_root_user  password=$mysql_root_password  host=%  priv=*.*:ALL
+

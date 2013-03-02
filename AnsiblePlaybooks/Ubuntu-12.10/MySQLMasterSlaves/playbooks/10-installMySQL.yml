@@ -1,0 +1,44 @@
+---
+#   Copyright 2012 Tim Ellis
+#   CTO: PalominoDB
+#   The Palomino Cluster Tool
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+# on all hosts, install required software
+- hosts: mysqlmasters:mysqlslaves
+  user: ubuntu
+  sudo: True
+  vars_files:
+   - ../../currentPalominoConfiguration.yml
+  tasks:
+   - name: Copy Configuration postprocessing scripts
+     action: copy src=../files/$item dest=/usr/local/bin/$item owner=root mode=0755
+     with_items:
+      - fixMySQLconfig.pl
+      - fixMySQLulimits.pl
+      - generateChangeMasterSQL.pl
+
+   # pigz needed by Jetpants
+   - name: Install MysQL and connector libraries - force/update_cache are on-purpose
+     action: apt name=$item state=installed force=yes update_cache=yes
+     with_items:
+      - mysql-server-5.5
+      - python-mysqldb
+      - libdbd-mysql-perl
+      - libdbi-perl
+      - pigz
+
+   - name: Give MySQL user proper limits
+     action: command /usr/local/bin/fixMySQLulimits.pl /etc/security/limits.conf /etc/pam.d/common-session
+

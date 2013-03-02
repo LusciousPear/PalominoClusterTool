@@ -1,0 +1,136 @@
+---
+# on all hosts, install required software
+
+#   Copyright 2012 Tim Ellis
+#   CTO: PalominoDB
+#   The Palomino Cluster Tool
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+- hosts: masters:slaves
+  user: spire
+  sudo: yes
+  vars_files:
+   - ../../currentPalominoConfiguration.yml
+  tasks:
+   # install the repos
+   - name: Install the CDH3 Repos
+     action: copy src=../files/cloudera-cdh4.list dest=/etc/apt/sources.list.d/cloudera-cdh4.list
+
+   # put your jdk in /tmp, also rename this to the .bin file you downloaded
+#   - name: copy the Java jdk to the nodes
+#     action: copy src=/tmp/jdk-6u39-linux-x64.bin dest=/tmp/jdk-6u39-linux-x64.bin
+
+#   - name: ensure /usr/java exists
+#     action: file dest=/usr/java state=directory mode=0755 owner=root group=root
+
+#   - name: ensure Java .bin file is executable
+#     action: file dest=/tmp/jdk-6u39-linux-x64.bin mode=0755 owner=root group=root
+
+   # change the ln -sf depending on the version you downloaded
+#   - name: install that crazy jdk
+#     action: shell creates=/usr/java/default chdir=/usr/java /tmp/jdk-6u39-linux-x64.bin ; ln -sf jdk1.6.0_39 default
+
+   # update the apt keys
+   - name: install apt keys for backwards compat
+#     action: apt_key id=327574EE02A818DD url=http://archive.cloudera.com/cdh4/ubuntu/precise/amd64/cdh state=present
+     action: apt_key url=http://archive.cloudera.com/cdh4/ubuntu/precise/amd64/cdh/archive.key state=present
+
+
+   # install the Hadoop software
+   - name: Install Hadoop and related libraries
+     action: apt name=$item state=installed force=yes update_cache=yes
+     with_items:
+      - hadoop-client
+      - hbase
+
+   # set ulimits
+   - name: Give hdfs proper limits 01
+     action: lineinfile name=/etc/security/limits.conf regexp='^hdfs - nofile' line='hdfs - nofile 32768'
+   - name: Give hdfs proper limits 02
+     action: lineinfile name=/etc/security/limits.conf regexp='^hdfs - nproc'  line='hdfs - nproc 62000'
+   - name: Give mapred proper limits 01
+     action: lineinfile name=/etc/security/limits.conf regexp='^mapred - nofile' line='mapred - nofile 32768'
+   - name: Give mapred proper limits 02
+     action: lineinfile name=/etc/security/limits.conf regexp='^mapred - nproc'  line='mapred - nproc 62000'
+   - name: Give hbase proper limits 01
+     action: lineinfile name=/etc/security/limits.conf regexp='^hbase - nofile' line='hbase - nofile 32768'
+   - name: Give hbase proper limits 02
+     action: lineinfile name=/etc/security/limits.conf regexp='^hbase - nproc'  line='hbase - nproc 62000'
+
+   - name: Set PAM to properly give ulimits
+     action: lineinfile name=/etc/pam.d/common-session regexp='pam_limits.so' line='session required pam_limits.so'
+
+
+- hosts: NameNodes
+  user: spire
+  sudo: yes
+  vars_files:
+   - ../../currentPalominoConfiguration.yml
+  tasks:
+   - name: Install Hadoop NameNodes
+     action: apt name=$item state=installed force=yes
+     with_items:
+      - hadoop-hdfs-namenode
+
+
+## # huh? this fails. is the package depreceated and Cloudera
+## # documentation just not updated to reflect that fact? would
+## # make sense since there's now the backup namenode etc concepts.
+## - hosts: SecondaryNameNodes
+##   user: ubuntu
+##   sudo: True
+##   vars_files:
+##    - ../../currentPalominoConfiguration.yml
+##   tasks:
+##    - name: Install Hadoop SecondaryNameNodes
+##      action: apt name=$item state=installed force=yes
+##      with_items:
+##       - hadoop-hdfs-secondarynamenode
+
+
+- hosts: JobTrackers
+  user: spire
+  sudo: yes
+  vars_files:
+   - ../../currentPalominoConfiguration.yml
+  tasks:
+   - name: Install Hadoop JobTrackers
+     action: apt name=$item state=installed force=yes
+     with_items:
+      - hadoop-0.20-mapreduce-jobtracker
+
+
+- hosts: DataNodes
+  user: spire
+  sudo: yes
+  vars_files:
+   - ../../currentPalominoConfiguration.yml
+  tasks:
+   - name: Install Hadoop DataNodes
+     action: apt name=$item state=installed force=yes
+     with_items:
+      - hadoop-hdfs-datanode
+
+
+- hosts: TaskTrackers
+  user: spire
+  sudo: yes
+  vars_files:
+   - ../../currentPalominoConfiguration.yml
+  tasks:
+   - name: Install Hadoop TaskTrackers
+     action: apt name=$item state=installed force=yes
+     with_items:
+      - hadoop-0.20-mapreduce-tasktracker
+
