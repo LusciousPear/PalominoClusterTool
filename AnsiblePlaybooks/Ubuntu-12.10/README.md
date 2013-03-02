@@ -18,6 +18,7 @@ Steps to Perform for All Cluster Types
    1. Make sure there’s not a lot of crap in /etc/apt/sources.list.d/ -- only have repos that work
    2. Edit all the playbooks in Hadoop/ and HBase/ to use the proper users (default is 'ubuntu')
    3. Check on hadoop/variables.yaml and hbase/variables/yaml and edit all the templates for the proper values.
+   4. NOTE: the JVM installation has been disabled in the Hadoop thing, and I've removed some safety checking (like requiring 4 datanodes)
 
 
 Steps to Set Up MySQL + MHA
