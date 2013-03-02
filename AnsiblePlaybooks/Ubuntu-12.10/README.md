@@ -15,6 +15,9 @@ Steps to Perform for All Cluster Types
       to install monitoring on your cluster.
    1. Pick an alerting solution from the scripts beginning with 30- and run one
       to get alerting on your cluster.
+   1. Make sure there’s not a lot of crap in /etc/apt/sources.list.d/ -- only have repos that work
+   2. Edit all the playbooks in Hadoop/ and HBase/ to use the proper users (default is 'ubuntu')
+   3. Check on hadoop/variables.yaml and hbase/variables/yaml and edit all the templates for the proper values.
 
 
 Steps to Set Up MySQL + MHA
